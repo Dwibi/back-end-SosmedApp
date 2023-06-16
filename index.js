@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 
-const PORT = 6000;
+const PORT = 5999;
 const app = express();
 
 // app.use(express.static("public"));
@@ -9,9 +9,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.get("/", (req,res) => {
-    res.send("Bisa Masbro")
-})
+const { userRoute } = require("./routers");
+
+app.use("/users", userRoute);
 
 app.listen(PORT, () => {
   console.log(`server started on port ${PORT}`);
