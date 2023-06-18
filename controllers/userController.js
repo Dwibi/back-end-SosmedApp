@@ -3,6 +3,7 @@ const { User } = db;
 const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const transporter = require("../helper/nodemailer");
 
 module.exports = {
   createUser: async (req, res) => {
@@ -68,17 +69,32 @@ module.exports = {
 
       const hashPassword = await bcrypt.hash(password, salt);
 
-      console.log(email);
+      const payload = {
+        email: email,
+      };
+
+      const verifyToken = jwt.sign(payload, "token-email", {
+        expiresIn: "10m",
+      });
+
       const result = await User.create({
         username,
         email,
         password: hashPassword,
         verify: false,
+        verifyToken: verifyToken,
+      });
+
+      const sendEmail = await transporter.sendMail({
+        from: "dwibiyt@gmail.com",
+        to: email,
+        subject: "Code Verification",
+        html: `<h1>hallo</h1> <a href="http://localhost:3000/email-verification/${verifyToken}">Verifikasi Disini</a>`,
       });
 
       return res.status(201).send({
         isError: true,
-        message: "Account Created!",
+        message: "Account Created. Please check your email for verification",
         data: result,
       });
     } catch (error) {
@@ -140,6 +156,51 @@ module.exports = {
       res.status(error.code || 500).send({
         isError: true,
         message: error.message,
+        data: null,
+      });
+    }
+  },
+  resendEmailVerify: async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const payload = {
+        email: email,
+      };
+
+      const newVerifyToken = jwt.sign(payload, "token-email", {
+        expiresIn: "10m",
+      });
+
+      const changeOldToken = await User.update(
+        {
+          verifyToken: newVerifyToken,
+        },
+        {
+          where: {
+            email: email,
+          },
+        }
+      );
+
+      if (changeOldToken) {
+        await transporter.sendMail({
+          from: "dwibiyt@gmail.com",
+          to: email,
+          subject: "Code Verification",
+          html: `<h1>hallo</h1> <a href="http://localhost:3000/email-verification/${newVerifyToken}">Verifikasi Disini</a>`,
+        });
+      }
+
+      return res.status(200).send({
+        isError: false,
+        message: "Please check your email for verification",
+        data: null,
+      });
+    } catch (error) {
+      res.status(500).send({
+        isError: true,
+        message: error.code,
         data: null,
       });
     }

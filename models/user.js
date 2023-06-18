@@ -9,6 +9,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      // User.hasMany(models.Post, {
+      //   foreignKey: "user_id",
+      // });
     }
   }
   User.init(
@@ -25,9 +28,11 @@ module.exports = (sequelize, DataTypes) => {
         unique: true,
       },
       password: DataTypes.STRING,
-      verify: DataTypes.BOOLEAN,
       image_profile: DataTypes.STRING,
       bio: DataTypes.STRING,
+      verify: DataTypes.BOOLEAN,
+      verifyToken: DataTypes.STRING,
+      ForgetPassToken: DataTypes.STRING,
     },
     {
       sequelize,

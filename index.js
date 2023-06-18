@@ -9,9 +9,10 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-const { userRoute } = require("./routers");
+const { userRoute, verifyEmailTokenRoute } = require("./routers");
 
 app.use("/users", userRoute);
+app.use("/verification", verifyEmailTokenRoute);
 
 app.listen(PORT, () => {
   console.log(`server started on port ${PORT}`);
