@@ -190,8 +190,6 @@ module.exports = {
       if (tokenInDb.verifyToken !== token) {
         throw { message: "Your link is Expire", code: 401 };
       }
-      // console.log(tokenInDb.verifyToken);
-      // console.log(token);
       let result = await User.update(
         {
           verify: true,
@@ -270,6 +268,142 @@ module.exports = {
       res.status(500).send({
         isError: true,
         message: error.code,
+        data: null,
+      });
+    }
+  },
+  sendForgetPassword: async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      const searchAccount = await User.findOne({
+        where: {
+          email: email,
+        },
+      });
+
+      if (!searchAccount) {
+        throw { message: "Your accound doesn't exist", code: 404 };
+      }
+
+      const payload = {
+        email: email,
+      };
+
+      const forgetPasswordToken = jwt.sign(payload, "token-forget-password", {
+        expiresIn: "10m",
+      });
+
+      const result = await User.update(
+        {
+          ForgetPassToken: forgetPasswordToken,
+        },
+        {
+          where: {
+            email: email,
+          },
+        }
+      );
+
+      console.log(result);
+
+      const data = fs.readFile(
+        "template/forgetPassword.html",
+        "utf-8",
+        async (error, data) => {
+          if (error) {
+            console.error(error);
+          } else {
+            // Use the file data
+            const tempCompile = handlebars.compile(data);
+            const tempResult = tempCompile({
+              link: `http://localhost:3000/forget-password/${forgetPasswordToken}`,
+            });
+            const sendEmail = await transporter.sendMail({
+              from: "dwibiyt@gmail.com",
+              to: email,
+              subject: "Reset Password",
+              html: tempResult,
+            });
+          }
+        }
+      );
+
+      return res.status(200).send({
+        isError: false,
+        message: "Please check your email for Reset Password",
+        data: null,
+      });
+    } catch (error) {
+      res.status(error.code).send({
+        isError: false,
+        message: error.message,
+        data: null,
+      });
+    }
+  },
+  verifyForgetPassword: async (req, res) => {
+    // console.log("masuk");
+    try {
+      const { password, confirmPassword } = req.body;
+      const { user } = req;
+      let token = req.headers.authorization;
+      // console.log("masok");
+      if (password.length < 8) {
+        throw {
+          message: "Password min 8 Character",
+          code: 400,
+        };
+      }
+      if (!/[A-Z]/.test(password)) {
+        throw {
+          message: "Password must contain at least one uppercase",
+          code: 400,
+        };
+      }
+      if (!/[a-z]/.test(password)) {
+        throw {
+          message: "Password must contain at least one lowecase",
+          code: 400,
+        };
+      }
+      if (!/[^\w\s]/.test(password)) {
+        throw {
+          message: "Password must contain at least one symbol",
+          code: 400,
+        };
+      }
+      if (password !== confirmPassword) {
+        throw { message: "Password and Confirm Password must same", code: 400 };
+      }
+      token = token.split(" ")[1];
+      const tokenInDb = await User.findOne({
+        where: {
+          email: user.email,
+        },
+      });
+      if (tokenInDb.ForgetPassToken !== token) {
+        throw { message: "Your link is Expire", code: 401 };
+      }
+      const salt = await bcrypt.genSalt(10);
+      const hashPassword = await bcrypt.hash(password, salt);
+      let result = await User.update(
+        { password: hashPassword, ForgetPassToken: null },
+        {
+          where: {
+            email: user.email,
+          },
+        }
+      );
+      res.status(200).send({
+        isError: false,
+        message: "Your password changed!",
+        data: result,
+      });
+    } catch (error) {
+      res.status(error).send({
+        isError: true,
+        message: error.message,
         data: null,
       });
     }
