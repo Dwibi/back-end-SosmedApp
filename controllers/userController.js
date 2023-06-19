@@ -4,6 +4,8 @@ const { Op } = require("sequelize");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const transporter = require("../helper/nodemailer");
+const fs = require("fs");
+const handlebars = require("handlebars");
 
 module.exports = {
   createUser: async (req, res) => {
@@ -85,12 +87,27 @@ module.exports = {
         verifyToken: verifyToken,
       });
 
-      const sendEmail = await transporter.sendMail({
-        from: "dwibiyt@gmail.com",
-        to: email,
-        subject: "Code Verification",
-        html: `<h1>hallo</h1> <a href="http://localhost:3000/email-verification/${verifyToken}">Verifikasi Disini</a>`,
-      });
+      const data = fs.readFile(
+        "template/emailVerification.html",
+        "utf-8",
+        async (error, data) => {
+          if (error) {
+            console.error(error);
+          } else {
+            // Use the file data
+            const tempCompile = handlebars.compile(data);
+            const tempResult = tempCompile({
+              link: `http://localhost:3000/email-verification/${verifyToken}`,
+            });
+            const sendEmail = await transporter.sendMail({
+              from: "dwibiyt@gmail.com",
+              to: email,
+              subject: "Code Verification",
+              html: tempResult,
+            });
+          }
+        }
+      );
 
       return res.status(201).send({
         isError: true,
@@ -160,6 +177,10 @@ module.exports = {
       });
     }
   },
+  verifyEmail: async (req, res) => {
+    try {
+    } catch (error) {}
+  },
   resendEmailVerify: async (req, res) => {
     try {
       const { email } = req.body;
@@ -183,14 +204,27 @@ module.exports = {
         }
       );
 
-      if (changeOldToken) {
-        await transporter.sendMail({
-          from: "dwibiyt@gmail.com",
-          to: email,
-          subject: "Code Verification",
-          html: `<h1>hallo</h1> <a href="http://localhost:3000/email-verification/${newVerifyToken}">Verifikasi Disini</a>`,
-        });
-      }
+      const data = fs.readFile(
+        "template/emailVerification.html",
+        "utf-8",
+        async (error, data) => {
+          if (error) {
+            console.error(error);
+          } else {
+            // Use the file data
+            const tempCompile = handlebars.compile(data);
+            const tempResult = tempCompile({
+              link: `http://localhost:3000/email-verification/${newVerifyToken}`,
+            });
+            const sendEmail = await transporter.sendMail({
+              from: "dwibiyt@gmail.com",
+              to: email,
+              subject: "Code Verification",
+              html: tempResult,
+            });
+          }
+        }
+      );
 
       return res.status(200).send({
         isError: false,
