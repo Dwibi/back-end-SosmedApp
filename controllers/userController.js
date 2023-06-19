@@ -401,7 +401,31 @@ module.exports = {
         data: result,
       });
     } catch (error) {
-      res.status(error).send({
+      res.status(error.code).send({
+        isError: true,
+        message: error.message,
+        data: null,
+      });
+    }
+  },
+  getUser: async (req, res) => {
+    try {
+      const { user } = req;
+
+      const result = await User.findOne({
+        attributes: { exclude: ["password", "verifyToken", "ForgetPassToken"] },
+        where: {
+          id: user.id,
+        },
+      });
+
+      res.status(200).send({
+        isError: false,
+        message: "Get data user Success!",
+        data: result,
+      });
+    } catch (error) {
+      res.status(error.code).send({
         isError: true,
         message: error.message,
         data: null,

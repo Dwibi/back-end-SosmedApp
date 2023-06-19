@@ -4,7 +4,11 @@ const Router = express.Router();
 
 const { userController } = require("../controllers");
 
-const { verifyTokenEmail, verifyTokenForgetPassword } = require("../auth/auth");
+const {
+  verifyTokenEmail,
+  verifyTokenForgetPassword,
+  verifyTokenUser,
+} = require("../auth/auth");
 
 Router.post("/register", userController.createUser);
 Router.post("/login", userController.loginUser);
@@ -16,5 +20,6 @@ Router.patch(
   verifyTokenForgetPassword,
   userController.verifyForgetPassword
 );
+Router.get("/", verifyTokenUser, userController.getUser);
 
 module.exports = Router;

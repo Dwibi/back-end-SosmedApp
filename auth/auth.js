@@ -81,4 +81,44 @@ module.exports = {
       });
     }
   },
+
+  verifyTokenUser: (req, res, next) => {
+    try {
+      let token = req.headers.authorization;
+
+      console.log(token);
+
+      if (!token) {
+        return res.status(401).send({
+          isError: true,
+          message: "Unauthorize!",
+          data: null,
+        });
+      }
+      token = token.split(" ")[1];
+      if (token === null || !token) {
+        return res.status(401).send({
+          isError: true,
+          message: "Unauthorize!",
+          data: null,
+        });
+      }
+      let verifyTokenUser = jwt.verify(token, "token-login");
+      if (!verifyTokenUser) {
+        return res.status(401).send({
+          isError: true,
+          message: "Your link is expired!",
+          data: null,
+        });
+      }
+      req.user = verifyTokenUser;
+      next();
+    } catch (error) {
+      return res.status(500).send({
+        isError: true,
+        message: error.message,
+        data: null,
+      });
+    }
+  },
 };
