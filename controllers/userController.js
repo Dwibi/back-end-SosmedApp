@@ -179,7 +179,42 @@ module.exports = {
   },
   verifyEmail: async (req, res) => {
     try {
-    } catch (error) {}
+      const { user } = req;
+      let token = req.headers.authorization;
+      token = token.split(" ")[1];
+      const tokenInDb = await User.findOne({
+        where: {
+          email: user.email,
+        },
+      });
+      if (tokenInDb.verifyToken !== token) {
+        throw { message: "Your link is Expire", code: 401 };
+      }
+      // console.log(tokenInDb.verifyToken);
+      // console.log(token);
+      let result = await User.update(
+        {
+          verify: true,
+          verifyToken: null,
+        },
+        {
+          where: {
+            email: user.email,
+          },
+        }
+      );
+      res.status(200).send({
+        isError: false,
+        message: "Your Email is Verified Now",
+        data: result,
+      });
+    } catch (error) {
+      res.status(error.code).send({
+        isError: true,
+        message: error.message,
+        data: null,
+      });
+    }
   },
   resendEmailVerify: async (req, res) => {
     try {
